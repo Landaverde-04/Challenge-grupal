@@ -47,6 +47,7 @@ class FileManager:
         registros = self.leer_todos()
         if not registros:
             return 1
-        else:
-            ultimo_id = registros[-1]
-            return int(ultimo_id['id']) + 1
+        nombre_columna_id = self.fieldnames[0] #Asumimos que el primer campo es el ID
+        ultimo_registro = registros[-1]
+
+        return int(ultimo_registro[nombre_columna_id]) + 1
