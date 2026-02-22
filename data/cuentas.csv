@@ -1,3 +1,5 @@
 id_cuenta,propietario_id,tipo,saldo,estado
-1,2,Ahorro,0.0,Activa
+1,2,Ahorro,20.0,Activa
 2,2,Corriente,0.0,Activa
+3,3,Ahorro,10.0,Activa
+4,3,Corriente,0.0,Bloqueada

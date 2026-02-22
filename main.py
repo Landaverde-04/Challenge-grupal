@@ -2,10 +2,12 @@ import os
 import time
 from application.auth_service import AuthService
 from application.admin_service import AdminService
+from application.client_service import ClientService
 
 # Instanciamos el servicio
 auth_service = AuthService()
 admin_service = AdminService()
+client_service = ClientService()
 
 def menu_principal():
     while True:
@@ -56,9 +58,9 @@ def login_cliente_view():
     if usuario:
         print(f"\nBienvenido, Cliente {usuario.nombres}!")
         time.sleep(1)
-        # menu_cliente(usuario) <-- PRÓXIMO PASO
+        menu_cliente(usuario) 
     else:
-        print("\n❌ Credenciales incorrectas o no eres Cliente.")
+        print("\nCredenciales incorrectas o no eres Cliente.")
         time.sleep(2)
 
 def menu_admin(admin_actual):
@@ -90,6 +92,127 @@ def menu_admin(admin_actual):
         else:
             print("Opción inválida.")
             time.sleep(1)
+
+def menu_cliente(cliente_actual):
+    while True:
+        os.system("cls" if os.name == "nt" else "clear")
+        print(f"--- MENÚ CLIENTE: {cliente_actual.nombres} {cliente_actual.apellidos} ---")
+        print("1. Ver saldo de mis cuentas")
+        print("2. Depositar")
+        print("3. Retirar")
+        print("4. Ver historial de movimientos ")
+        print("5. Transferir a terceros ")
+        print("6. Cerrar sesión")
+        
+        opcion = input("Opción: ")
+        
+        if opcion == '1':
+            vista_ver_saldos(cliente_actual)
+        elif opcion == '2':
+            vista_transaccion(cliente_actual, "DEPOSITO")
+        elif opcion == '3':
+            vista_transaccion(cliente_actual, "RETIRO")
+        elif opcion == '4':
+            vista_historial(cliente_actual)
+        elif opcion == '5':
+            vista_transferir(cliente_actual)
+        elif opcion == '6':
+            return
+        else:
+            print("Opción no válida.")
+            time.sleep(1)
+
+def vista_transferir(cliente_actual):
+    os.system("cls" if os.name == "nt" else "clear")
+    print("--- TRANSFERENCIAS ---")
+    
+    # Mostramos las cuentas disponibles del cliente
+    cuentas = client_service.obtener_mis_cuentas(cliente_actual.id)
+    if not cuentas:
+        print("No tienes cuentas para realizar transferencias.")
+        time.sleep(2); return
+        
+    print("Tus cuentas disponibles para origen:")
+    for c in cuentas:
+        print(f"- N°: {c['id_cuenta']} | {c['tipo']} | Saldo: ${float(c['saldo']):.2f}")
+        
+    id_origen = input("\nIngrese su N° de cuenta origen: ").strip()
+    id_destino = input("Ingrese el N° de cuenta destino (Propia o Tercero): ").strip()
+    monto_str = input("Ingrese el monto a transferir: $").strip()
+    
+    try:
+        nuevo_saldo = client_service.transferir(id_origen, id_destino, monto_str)
+        print("\nTransferencia enviada con éxito.")
+        print(f"Saldo restante en tu cuenta origen: ${nuevo_saldo:.2f}")
+    except ValueError as e:
+        print(f"\nError: {e}")
+    except Exception as e:
+        print(f"\nError inesperado. Verifique los datos ingresados: {e}")
+        
+    input("\nPresione Enter para continuar...")
+
+def vista_historial(cliente_actual):
+    os.system("cls" if os.name == "nt" else "clear")
+    print(f"--- HISTORIAL DE MOVIMIENTOS ---")
+    
+    historial = client_service.obtener_historial_movimientos(cliente_actual.id)
+    
+    if not historial:
+        print("No tienes movimientos registrados aún.")
+    else:
+        print(f"{'FECHA':<20} | {'CUENTA':<10} | {'MOVIMIENTO':<15} | {'MONTO'}")
+        print("-" * 60)
+        # Mostrar el historial al revés (los más recientes primero)
+        for t in reversed(historial):
+            # Formateamos visualmente para que se entienda mejor
+            simbolo = "+" if t['tipo_movimiento'] in ['DEPOSITO', 'TRANSFER_IN'] else "-"
+            print(f"{t['fecha']:<20} | {t['id_cuenta']:<10} | {t['tipo_movimiento']:<15} | {simbolo}${float(t['monto']):.2f}")
+            
+    input("\nPresione Enter para volver...")
+
+def vista_ver_saldos(cliente_actual):
+    os.system("cls" if os.name == "nt" else "clear")
+    print("--- MIS CUENTAS Y SALDOS ---")
+    
+    cuentas = client_service.obtener_mis_cuentas(cliente_actual.id)
+    if not cuentas:
+        print("Aún no tienes cuentas abiertas en nuestro banco.")
+    else:
+        print(f"{'N° CUENTA':<10} | {'TIPO':<10} | {'SALDO':<10} | {'ESTADO'}")
+        print("-" * 50)
+        for c in cuentas:
+            print(f"{c['id_cuenta']:<10} | {c['tipo']:<10} | ${float(c['saldo']):<9.2f} | {c['estado']}")
+            
+    input("\nPresione Enter para volver...")
+
+def vista_transaccion(cliente_actual, tipo_movimiento):
+    os.system("cls" if os.name == "nt" else "clear")
+    print(f"--- NUEVO {tipo_movimiento} ---")
+    
+    # Mostrar sus cuentas para que sepa los IDs
+    cuentas = client_service.obtener_mis_cuentas(cliente_actual.id)
+    if not cuentas:
+        print("No tienes cuentas para realizar esta operación.")
+        time.sleep(2); return
+        
+    for c in cuentas:
+        print(f"Cuenta: {c['id_cuenta']} | {c['tipo']} | Saldo: ${float(c['saldo']):.2f} | Estado: {c['estado']}")
+        
+    id_cuenta = input("\nIngrese el N° de cuenta a utilizar: ").strip()
+    monto_str = input(f"Ingrese el monto a {tipo_movimiento.lower()}: $").strip()
+    
+    try:
+        # Llamamos al servicio para que aplique las reglas de negocio
+        nuevo_saldo = client_service.procesar_transaccion(id_cuenta, tipo_movimiento, monto_str)
+        print(f"\n{tipo_movimiento.capitalize()} exitoso.")
+        print(f"Tu nuevo saldo es: ${nuevo_saldo:.2f}")
+    except ValueError as e:
+        # Si el servicio detecta un error (saldo insuficiente, monto negativo), lo mostramos aquí
+        print(f"\nError: {e}")
+    except Exception as e:
+        print("\nError inesperado. Ingrese un monto numérico válido.")
+        
+    input("\nPresione Enter para continuar...")
 
 def crear_cliente_view():
     os.system("cls" if os.name == "nt" else "clear")
