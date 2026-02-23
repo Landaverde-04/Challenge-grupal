@@ -57,10 +57,37 @@ class AnalyticsService:
 
             total_depositos = ingresos.sum()
             total_gastos = gastos.sum()
+            # ---- Agrupación diaria (solo ingresos en las cuentas) ----
+            dias_cuenta = self.dias[mask_cuenta & mask_ingresos]
+            montos_cuenta = self.monto[mask_cuenta & mask_ingresos]
 
+            if montos_cuenta.size > 0:
+
+                dias_unicos, indices = np.unique(dias_cuenta, return_inverse=True)
+
+                totales_diarios = np.bincount(indices, weights=montos_cuenta)
+
+                promedio_diario = totales_diarios.mean()
+                std_diaria = totales_diarios.std()
+
+                p50 = np.percentile(totales_diarios, 50)
+                p90 = np.percentile(totales_diarios, 90)
+                p99 = np.percentile(totales_diarios, 99)
+
+            else:
+                promedio_diario = 0
+                std_diaria = 0
+                p50 = p90 = p99 = 0
             ratio = total_depositos / total_gastos if total_gastos != 0 else 0
+
+
 
             print(f"\nCuenta {cuenta}")
             print(f"Total depósitos: {total_depositos}")
             print(f"Total gastos: {total_gastos}")
             print(f"Ratio depósitos/gastos: {ratio}")
+            print(f"Promedio diario: {promedio_diario}")
+            print(f"Desviación estándar diaria: {std_diaria}")
+            print(f"P50: {p50}")
+            print(f"P90: {p90}")
+            print(f"P99: {p99}")
