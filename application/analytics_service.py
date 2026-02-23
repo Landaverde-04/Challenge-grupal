@@ -379,3 +379,61 @@ class AnalyticsService:
         plt.close()
 
         print(f"Gráfico guardado en: {ruta}")
+        # -------------------------------------------------
+    # 2.5 VISUALIZACIÓN - GRAFO DE TRANSFERENCIAS
+    # -------------------------------------------------
+    def plot_grafo_transferencias(self):
+
+        if self.transacciones.size == 0:
+            print("No hay transacciones para graficar.")
+            return
+
+        import matplotlib.pyplot as plt
+        import networkx as nx
+
+        os.makedirs("outputs/plots", exist_ok=True)
+
+        # Filtrar solo transferencias salientes
+        mask_transfer = (self.tipo == "TRANSFER_OUT")
+
+        cuentas_origen = self.id_cuenta[mask_transfer]
+        montos = self.monto[mask_transfer]
+
+        if cuentas_origen.size == 0:
+            print("No hay transferencias registradas.")
+            return
+
+       
+        cuentas_unicas = np.unique(self.id_cuenta)
+        cuentas_destino = np.random.choice(cuentas_unicas, size=cuentas_origen.size)
+
+        G = nx.DiGraph()
+
+        for origen, destino, monto in zip(cuentas_origen, cuentas_destino, montos):
+            if G.has_edge(origen, destino):
+                G[origen][destino]['weight'] += monto
+            else:
+                G.add_edge(origen, destino, weight=monto)
+
+        plt.figure(figsize=(8, 6))
+        pos = nx.spring_layout(G, seed=42)
+
+        weights = [G[u][v]['weight'] for u, v in G.edges()]
+
+        max_weight = max(weights) if weights else 1
+
+        nx.draw(
+            G,
+            pos,
+            with_labels=True,
+            node_size=1500,
+            font_size=10,
+            width=[w / max(weights) * 3 for w in weights] if weights else 1
+)
+
+        plt.title("Grafo de Transferencias entre Cuentas")
+
+        ruta = "outputs/plots/grafo_transferencias.png"
+        plt.savefig(ruta)
+        plt.close()
+        print(f"grafo guardado en {ruta}")

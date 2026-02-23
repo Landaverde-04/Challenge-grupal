@@ -17,7 +17,7 @@ def menu_principal():
         print("=== SISTEMA BANCARIO ===")
         print("1. Ingresar como Administrador")
         print("2. Ingresar como Cliente")
-        print("3. Salir")
+        print("3. Salir del sistema")
 
         opcion = input("Seleccione una opción: ")
 
@@ -125,7 +125,8 @@ def menu_analisis():
         print("5. Heatmap actividad")
         print("6. boxplot montos")
         print("7. Depósito versus gastos")
-        print("8. Volver al menu anterior")
+        print("8. Grafico transferencias")
+        print("9. Volver al menu anterior")
 
         opcion = input("Seleccione una opción: ")
 
@@ -151,7 +152,13 @@ def menu_analisis():
             analytics.plot_scatter_depositos_vs_gastos()
             input("\nPresione enter para continuar...")
         elif opcion == '8':
+            analytics.plot_grafo_transferencias()
+            input("\nPresiona Enter para continuar ..")
+        elif opcion == '9':
             break
+        else:
+            print("opcion inválida")
+            time.sllep(1)
         
 
 # CREAR CLIENTE
