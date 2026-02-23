@@ -296,3 +296,86 @@ class AnalyticsService:
         plt.close()
 
         print(f"Gráfico guardado en: {ruta}")
+
+        # -------------------------------------------------
+    # 2.4 VISUALIZACIÓN 3 - BOXPLOT DEPÓSITOS VS GASTOS
+    # -------------------------------------------------
+    def plot_boxplot_montos(self):
+
+        if self.transacciones.size == 0:
+            print("No hay transacciones para graficar.")
+            return
+
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+
+        os.makedirs("outputs/plots", exist_ok=True)
+
+        mask_ingresos = (self.tipo == "DEPOSITO") | (self.tipo == "TRANSFER_IN")
+        mask_gastos = (self.tipo == "RETIRO") | (self.tipo == "TRANSFER_OUT")
+
+        ingresos = self.monto[mask_ingresos]
+        gastos = self.monto[mask_gastos]
+
+        if ingresos.size == 0 and gastos.size == 0:
+            print("No hay datos suficientes para boxplot.")
+            return
+
+        plt.figure()
+        sns.boxplot(data=[ingresos, gastos])
+        plt.xticks([0, 1], ["Depósitos", "Gastos"])
+
+        plt.title("Distribución de Montos - Depósitos vs Gastos")
+        plt.ylabel("Monto")
+        plt.tight_layout()
+
+        ruta = "outputs/plots/boxplot_montos.png"
+        plt.savefig(ruta)
+        plt.close()
+
+        print(f"Gráfico guardado en: {ruta}")
+
+        # -------------------------------------------------
+    # 2.4 VISUALIZACIÓN 4 - SCATTER DEPÓSITOS VS GASTOS
+    # -------------------------------------------------
+    def plot_scatter_depositos_vs_gastos(self):
+
+        if self.transacciones.size == 0:
+            print("No hay transacciones para graficar.")
+            return
+
+        import matplotlib.pyplot as plt
+
+        os.makedirs("outputs/plots", exist_ok=True)
+
+        mask_ingresos = (self.tipo == "DEPOSITO") | (self.tipo == "TRANSFER_IN")
+        mask_gastos = (self.tipo == "RETIRO") | (self.tipo == "TRANSFER_OUT")
+
+        cuentas = np.unique(self.id_cuenta)
+
+        total_depositos = []
+        total_gastos = []
+
+        for cuenta in cuentas:
+            mask_cuenta = (self.id_cuenta == cuenta)
+
+            total_dep = self.monto[mask_cuenta & mask_ingresos].sum()
+            total_g = self.monto[mask_cuenta & mask_gastos].sum()
+
+            total_depositos.append(total_dep)
+            total_gastos.append(total_g)
+
+        plt.figure()
+        plt.scatter(total_depositos, total_gastos)
+
+        plt.title("Depósitos vs Gastos por Cuenta")
+        plt.xlabel("Total Depósitos")
+        plt.ylabel("Total Gastos")
+
+        plt.tight_layout()
+
+        ruta = "outputs/plots/scatter_depositos_vs_gastos.png"
+        plt.savefig(ruta)
+        plt.close()
+
+        print(f"Gráfico guardado en: {ruta}")

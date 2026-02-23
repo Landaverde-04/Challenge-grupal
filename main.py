@@ -123,7 +123,9 @@ def menu_analisis():
         print("3. Anomalías")
         print("4. Serie temporal neto")
         print("5. Heatmap actividad")
-        print("6. Volver a menu anterior")
+        print("6. boxplot montos")
+        print("7. Depósito versus gastos")
+        print("8. Volver al menu anterior")
 
         opcion = input("Seleccione una opción: ")
 
@@ -143,13 +145,17 @@ def menu_analisis():
             analytics.plot_heatmap_actividad()
             input("\nPresione Enter para continuar ..")
         elif opcion == '6':
+            analytics.plot_boxplot_montos()
+            input("\nPresione Enter para continuar ..")
+        elif opcion == '7':
+            analytics.plot_scatter_depositos_vs_gastos()
+            input("\nPresione enter para continuar...")
+        elif opcion == '8':
             break
         
 
-
-# -------------------------------------------------
 # CREAR CLIENTE
-# -------------------------------------------------
+
 def crear_cliente_view():
     os.system("cls" if os.name == "nt" else "clear")
     print("--- CREAR NUEVO CLIENTE ---")
