@@ -2,3 +2,4 @@ id,nombres,apellidos,dui,pin,rol,username
 1,Kevin,Landaverde,00000000-0,1234,Administrador,KL1
 2,Juan,Perez,12345678-9,0000,Cliente,3,Juan Jose,Urrutia Najarro,12345678-9,1234,Cliente,
 3,Enrique Ernesto,Castillo Herrera,87654321-0,1234,Cliente,
+4,Norma Lisseth,Ramirez d Leonor,04055333-6,1402,Cliente,
