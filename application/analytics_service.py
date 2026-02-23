@@ -27,6 +27,7 @@ class AnalyticsService:
         )
 
         if self.transacciones.size > 0:
+
             self.id_cuenta = self.transacciones['f1']
             self.tipo = self.transacciones['f2']
             self.monto = self.transacciones['f3']
@@ -36,6 +37,7 @@ class AnalyticsService:
             self.dias = self.fechas.astype('datetime64[D]')
 
             print("Datos cargados correctamente para análisis.")
+
         else:
             print("No hay transacciones registradas.")
 
@@ -55,7 +57,7 @@ class AnalyticsService:
 
         print("\n=== ESTADÍSTICAS POR CUENTA ===")
 
-        for cuenta in cuentas:
+        for cuenta in cuentas:  # solo impresión final
 
             mask_cuenta = (self.id_cuenta == cuenta)
 
@@ -65,26 +67,22 @@ class AnalyticsService:
             total_depositos = ingresos.sum()
             total_gastos = gastos.sum()
 
-            # ---- Agrupación diaria (solo ingresos) ----
             dias_cuenta = self.dias[mask_cuenta & mask_ingresos]
-            montos_cuenta = ingresos
 
-            if montos_cuenta.size > 0:
+            if ingresos.size > 0:
 
                 dias_unicos, indices = np.unique(dias_cuenta, return_inverse=True)
-                totales_diarios = np.bincount(indices, weights=montos_cuenta)
+                totales_diarios = np.bincount(indices, weights=ingresos)
 
-                promedio_diario = totales_diarios.mean()
-                std_diaria = totales_diarios.std()
+                promedio = totales_diarios.mean()
+                std = totales_diarios.std()
 
                 p50 = np.percentile(totales_diarios, 50)
                 p90 = np.percentile(totales_diarios, 90)
                 p99 = np.percentile(totales_diarios, 99)
 
             else:
-                promedio_diario = 0
-                std_diaria = 0
-                p50 = p90 = p99 = 0
+                promedio = std = p50 = p90 = p99 = 0
 
             ratio = total_depositos / total_gastos if total_gastos != 0 else 0
 
@@ -92,8 +90,8 @@ class AnalyticsService:
             print(f"Total depósitos: {total_depositos}")
             print(f"Total gastos: {total_gastos}")
             print(f"Ratio depósitos/gastos: {ratio}")
-            print(f"Promedio diario: {promedio_diario}")
-            print(f"Desviación estándar diaria: {std_diaria}")
+            print(f"Promedio diario: {promedio}")
+            print(f"Desviación estándar diaria: {std}")
             print(f"P50: {p50}")
             print(f"P90: {p90}")
             print(f"P99: {p99}")
@@ -109,7 +107,6 @@ class AnalyticsService:
 
         print("\n=== DASHBOARD ADMINISTRADOR ===")
 
-        # 1. Transacciones por día
         dias_unicos, indices = np.unique(self.dias, return_inverse=True)
         transacciones_por_dia = np.bincount(indices)
 
@@ -117,50 +114,142 @@ class AnalyticsService:
         for d, total in zip(dias_unicos, transacciones_por_dia):
             print(f"{d}: {total}")
 
-        # Top 5 días pico
-        top5_indices = np.argsort(transacciones_por_dia)[-5:][::-1]
+        top5 = np.argsort(transacciones_por_dia)[-5:][::-1]
 
         print("\nTop 5 días pico:")
-        for idx in top5_indices:
+        for idx in top5:
             print(f"{dias_unicos[idx]} -> {transacciones_por_dia[idx]} transacciones")
 
-        # 2. Totales diarios del banco
         mask_ingresos = (self.tipo == "DEPOSITO") | (self.tipo == "TRANSFER_IN")
         mask_gastos = (self.tipo == "RETIRO") | (self.tipo == "TRANSFER_OUT")
 
-        total_ingresos_dia = np.bincount(indices, weights=self.monto * mask_ingresos)
-        total_gastos_dia = np.bincount(indices, weights=self.monto * mask_gastos)
+        ingresos_dia = np.bincount(indices, weights=self.monto * mask_ingresos)
+        gastos_dia = np.bincount(indices, weights=self.monto * mask_gastos)
 
         print("\nTotales diarios del banco:")
         for i, d in enumerate(dias_unicos):
-            neto = total_ingresos_dia[i] - total_gastos_dia[i]
-            print(f"{d} | Ingresos: {total_ingresos_dia[i]} | Gastos: {total_gastos_dia[i]} | Neto: {neto}")
+            neto = ingresos_dia[i] - gastos_dia[i]
+            print(f"{d} | Ingresos: {ingresos_dia[i]} | Gastos: {gastos_dia[i]} | Neto: {neto}")
 
-        # 3. Top cuentas por depósitos
-        cuentas_unicas = np.unique(self.id_cuenta)
-        totales_dep = []
+    # -------------------------------------------------
+    # 2.3 ANOMALÍAS
+    # -------------------------------------------------
+    def detectar_anomalias(self):
 
-        for cuenta in cuentas_unicas:
+        if self.transacciones.size == 0:
+            print("No hay transacciones para analizar.")
+            return
+
+        print("\n=== ANOMALÍAS DETECTADAS ===")
+
+        mask_ingresos = (self.tipo == "DEPOSITO") | (self.tipo == "TRANSFER_IN")
+        cuentas = np.unique(self.id_cuenta)
+
+        # 1️⃣ Z-SCORE
+        print("\n-- Z-Score sobre depósitos diarios (|z| > 3) --")
+
+        for cuenta in cuentas:
+
             mask_cuenta = (self.id_cuenta == cuenta)
-            total_dep = self.monto[mask_cuenta & mask_ingresos].sum()
-            totales_dep.append((cuenta, total_dep))
 
-        totales_dep.sort(key=lambda x: x[1], reverse=True)
+            dias_cuenta = self.dias[mask_cuenta & mask_ingresos]
+            montos_cuenta = self.monto[mask_cuenta & mask_ingresos]
 
-        print("\nTop cuentas por depósitos:")
-        for cuenta, total in totales_dep[:10]:
-            print(f"Cuenta {cuenta}: {total}")
+            if montos_cuenta.size < 2:
+                continue
 
-        # 4. Top cuentas por gastos
-        totales_gastos = []
+            dias_unicos, indices = np.unique(dias_cuenta, return_inverse=True)
+            totales = np.bincount(indices, weights=montos_cuenta)
 
-        for cuenta in cuentas_unicas:
+            media = totales.mean()
+            std = totales.std()
+
+            if std == 0:
+                continue
+
+            z = (totales - media) / std
+            anomalos = np.where(np.abs(z) > 3)[0]
+
+            for idx in anomalos:
+                print(f"Cuenta {cuenta} - Día {dias_unicos[idx]} - Z={z[idx]:.2f}")
+
+        # 2️⃣ STRUCTURING
+        print("\n-- Structuring (≥4 depósitos ≤ 50 en un día) --")
+
+        mask_depositos = (self.tipo == "DEPOSITO")
+
+        for cuenta in cuentas:
+
+            mask_cuenta = (self.id_cuenta == cuenta) & mask_depositos
+
+            dias_cuenta = self.dias[mask_cuenta]
+            montos_cuenta = self.monto[mask_cuenta]
+
+            if montos_cuenta.size == 0:
+                continue
+
+            dias_unicos, indices = np.unique(dias_cuenta, return_inverse=True)
+
+            for i, dia in enumerate(dias_unicos):
+                montos_dia = montos_cuenta[indices == i]
+
+                if montos_dia.size >= 4 and np.all(montos_dia <= 50):
+                    print(f"Cuenta {cuenta} - Día {dia} - Structuring detectado")
+
+        # 3️⃣ ACTIVIDAD NOCTURNA
+        print("\n-- Actividad nocturna inusual (21:00 - 04:00) --")
+
+        horas = self.fechas.astype('datetime64[h]').astype(int) % 24
+        mask_nocturno = (horas >= 21) | (horas < 4)
+
+        for cuenta in cuentas:
+
             mask_cuenta = (self.id_cuenta == cuenta)
-            total_g = self.monto[mask_cuenta & mask_gastos].sum()
-            totales_gastos.append((cuenta, total_g))
 
-        totales_gastos.sort(key=lambda x: x[1], reverse=True)
+            total_trans = mask_cuenta.sum()
+            total_nocturnas = (mask_cuenta & mask_nocturno).sum()
 
-        print("\nTop cuentas por gastos:")
-        for cuenta, total in totales_gastos[:10]:
-            print(f"Cuenta {cuenta}: {total}")
+            if total_trans == 0:
+                continue
+
+            ratio = total_nocturnas / total_trans
+
+            if ratio > 0.6 and total_nocturnas >= 3:
+                print(f"Cuenta {cuenta} - Alta actividad nocturna ({total_nocturnas} transacciones)")
+            # -------------------------------------------------
+    # 2.4 VISUALIZACIÓN 1 - SERIE TEMPORAL NETO DIARIO
+    # -------------------------------------------------
+    def plot_serie_temporal_neto(self):
+
+        if self.transacciones.size == 0:
+            print("No hay transacciones para graficar.")
+            return
+
+        import matplotlib.pyplot as plt
+
+        # Crear carpeta si no existe
+        os.makedirs("outputs/plots", exist_ok=True)
+
+        mask_ingresos = (self.tipo == "DEPOSITO") | (self.tipo == "TRANSFER_IN")
+        mask_gastos = (self.tipo == "RETIRO") | (self.tipo == "TRANSFER_OUT")
+
+        dias_unicos, indices = np.unique(self.dias, return_inverse=True)
+
+        ingresos_dia = np.bincount(indices, weights=self.monto * mask_ingresos)
+        gastos_dia = np.bincount(indices, weights=self.monto * mask_gastos)
+
+        neto_dia = ingresos_dia - gastos_dia
+
+        plt.figure()
+        plt.plot(dias_unicos.astype(str), neto_dia)
+        plt.title("Serie Temporal - Neto Diario del Banco")
+        plt.xlabel("Fecha")
+        plt.ylabel("Monto Neto")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+
+        ruta = "outputs/plots/serie_temporal_neto.png"
+        plt.savefig(ruta)
+        plt.close()
+
+        print(f"Gráfico guardado en: {ruta}")

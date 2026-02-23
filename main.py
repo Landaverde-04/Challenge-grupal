@@ -120,7 +120,9 @@ def menu_analisis():
         print("=== MÓDULO DE ANÁLISIS ===")
         print("1. Estadísticas por cuenta")
         print("2. Dashboard administrador")
-        print("3. Volver")
+        print("3. Anomalías")
+        print("4. Serie temporal neto")
+        print("5. Volver a menu anterior")
 
         opcion = input("Seleccione una opción: ")
 
@@ -131,10 +133,14 @@ def menu_analisis():
             analytics.dashboard_admin()
             input("\nPresione Enter para continuar...")
         elif opcion == '3':
+            analytics.detectar_anomalias()
+            input("\nPresione Enter para continuar...")
+        elif opcion == '4':
+            analytics.plot_serie_temporal_neto()
+            input("\nPresione Enter para continuar ..")
+        elif opcion == '5':
             break
-        else:
-            print("Opción inválida.")
-            input("Presione Enter para continuar...")
+        
 
 
 # -------------------------------------------------
@@ -251,7 +257,6 @@ def vista_cambiar_estado_cuenta():
         print("Cuenta no encontrada.")
 
     input("\nPresione Enter para continuar...")
-
 
 if __name__ == "__main__":
     menu_principal()
