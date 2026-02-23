@@ -41,11 +41,26 @@ class AnalyticsService:
             print("No hay transacciones para analizar.")
             return
 
-        # Máscaras
         mask_ingresos = (self.tipo == "DEPOSITO") | (self.tipo == "TRANSFER_IN")
         mask_gastos = (self.tipo == "RETIRO") | (self.tipo == "TRANSFER_OUT")
 
-        # Cuentas únicas
         cuentas = np.unique(self.id_cuenta)
 
-        print("Cuentas detectadas:", cuentas)
+        print("\n=== ESTADÍSTICAS POR CUENTA ===")
+
+        for cuenta in cuentas:
+
+            mask_cuenta = (self.id_cuenta == cuenta)
+
+            ingresos = self.monto[mask_cuenta & mask_ingresos]
+            gastos = self.monto[mask_cuenta & mask_gastos]
+
+            total_depositos = ingresos.sum()
+            total_gastos = gastos.sum()
+
+            ratio = total_depositos / total_gastos if total_gastos != 0 else 0
+
+            print(f"\nCuenta {cuenta}")
+            print(f"Total depósitos: {total_depositos}")
+            print(f"Total gastos: {total_gastos}")
+            print(f"Ratio depósitos/gastos: {ratio}")
