@@ -6,7 +6,6 @@ class AnalyticsService:
     def __init__(self):
         self.path_transacciones = os.path.join("data", "transacciones.csv")
         self._cargar_datos()
-        print("Datos cargados correctamente para análisis.")
 
     def _cargar_datos(self):
 
@@ -31,5 +30,22 @@ class AnalyticsService:
 
             self.fechas = self.fecha_str.astype('datetime64[s]')
             self.dias = self.fechas.astype('datetime64[D]')
+
+            print("Datos cargados correctamente para análisis.")
         else:
             print("No hay transacciones registradas.")
+
+    def estadisticas_por_cuenta(self):
+
+        if self.transacciones.size == 0:
+            print("No hay transacciones para analizar.")
+            return
+
+        # Máscaras
+        mask_ingresos = (self.tipo == "DEPOSITO") | (self.tipo == "TRANSFER_IN")
+        mask_gastos = (self.tipo == "RETIRO") | (self.tipo == "TRANSFER_OUT")
+
+        # Cuentas únicas
+        cuentas = np.unique(self.id_cuenta)
+
+        print("Cuentas detectadas:", cuentas)

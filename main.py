@@ -36,7 +36,7 @@ def menu_principal():
 def login_admin_view():
     os.system("cls" if os.name == "nt" else "clear")
     print("--- LOGIN ADMINISTRADOR ---")
-    username = input("Username (Ej. KL1): ").strip()
+    username = input("Username (Ej. KL1): ").strip() .upper()
     pin = input("PIN: ").strip()
     
     usuario = auth_service.login_admin(username, pin)
@@ -89,6 +89,7 @@ def menu_admin(admin_actual):
         elif opcion == '5':
             from application.analytics_service import AnalyticsService
             analytics = AnalyticsService()
+            analytics.estadisticas_por_cuenta()
             input("\nPresione Enter para continuar ....")
         #Aca ira la parte de analisis de datos, que se hara al final del proyecto, por ahora solo es un placeholder
         elif opcion == '6':
