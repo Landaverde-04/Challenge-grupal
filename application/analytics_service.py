@@ -216,7 +216,7 @@ class AnalyticsService:
 
             if ratio > 0.6 and total_nocturnas >= 3:
                 print(f"Cuenta {cuenta} - Alta actividad nocturna ({total_nocturnas} transacciones)")
-            # -------------------------------------------------
+           # -------------------------------------------------
     # 2.4 VISUALIZACIÓN 1 - SERIE TEMPORAL NETO DIARIO
     # -------------------------------------------------
     def plot_serie_temporal_neto(self):
@@ -227,7 +227,6 @@ class AnalyticsService:
 
         import matplotlib.pyplot as plt
 
-        # Crear carpeta si no existe
         os.makedirs("outputs/plots", exist_ok=True)
 
         mask_ingresos = (self.tipo == "DEPOSITO") | (self.tipo == "TRANSFER_IN")
@@ -249,6 +248,50 @@ class AnalyticsService:
         plt.tight_layout()
 
         ruta = "outputs/plots/serie_temporal_neto.png"
+        plt.savefig(ruta)
+        plt.close()
+
+        print(f"Gráfico guardado en: {ruta}")
+
+    # -------------------------------------------------
+    # 2.4 VISUALIZACIÓN 2 - HEATMAP ACTIVIDAD
+    # -------------------------------------------------
+    def plot_heatmap_actividad(self):
+
+        if self.transacciones.size == 0:
+            print("No hay transacciones para graficar.")
+            return
+
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+
+        os.makedirs("outputs/plots", exist_ok=True)
+
+        cuentas = np.unique(self.id_cuenta)
+        dias_unicos = np.unique(self.dias)
+
+        matriz = np.zeros((cuentas.size, dias_unicos.size))
+
+        for i, cuenta in enumerate(cuentas):
+            for j, dia in enumerate(dias_unicos):
+                mask = (self.id_cuenta == cuenta) & (self.dias == dia)
+                matriz[i, j] = mask.sum()
+
+        plt.figure()
+        sns.heatmap(
+            matriz,
+            xticklabels=dias_unicos.astype(str),
+            yticklabels=cuentas,
+            annot=True
+        )
+
+        plt.title("Heatmap de Actividad por Cuenta y Día")
+        plt.xlabel("Día")
+        plt.ylabel("Cuenta")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+
+        ruta = "outputs/plots/heatmap_actividad.png"
         plt.savefig(ruta)
         plt.close()
 

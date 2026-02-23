@@ -86,7 +86,7 @@ def menu_admin(admin_actual):
         print("3. Bloquear/Desbloquear cuenta")
         print("4. Listar usuarios y cuentas")
         print("5. Módulo de análisis")
-        print("6. Salir")
+        print("6. Salir de cuenta de ADMINISTRADOR")
 
         opcion = input("Seleccione una opción: ")
 
@@ -122,7 +122,8 @@ def menu_analisis():
         print("2. Dashboard administrador")
         print("3. Anomalías")
         print("4. Serie temporal neto")
-        print("5. Volver a menu anterior")
+        print("5. Heatmap actividad")
+        print("6. Volver a menu anterior")
 
         opcion = input("Seleccione una opción: ")
 
@@ -139,6 +140,9 @@ def menu_analisis():
             analytics.plot_serie_temporal_neto()
             input("\nPresione Enter para continuar ..")
         elif opcion == '5':
+            analytics.plot_heatmap_actividad()
+            input("\nPresione Enter para continuar ..")
+        elif opcion == '6':
             break
         
 
