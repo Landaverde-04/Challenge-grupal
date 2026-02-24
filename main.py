@@ -152,7 +152,7 @@ def menu_analisis():
             analytics.plot_scatter_depositos_vs_gastos()
             input("\nPresione enter para continuar...")
         elif opcion == '8':
-            analytics.plot_grafo_transferencias()
+            analytics.plot_grafo_flujo_financiero()
             input("\nPresiona Enter para continuar ..")
         elif opcion == '9':
             break

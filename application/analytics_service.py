@@ -216,9 +216,9 @@ class AnalyticsService:
 
             if ratio > 0.6 and total_nocturnas >= 3:
                 print(f"Cuenta {cuenta} - Alta actividad nocturna ({total_nocturnas} transacciones)")
-           # -------------------------------------------------
+
     # 2.4 VISUALIZACIÓN 1 - SERIE TEMPORAL NETO DIARIO
-    # -------------------------------------------------
+
     def plot_serie_temporal_neto(self):
 
         if self.transacciones.size == 0:
@@ -379,10 +379,11 @@ class AnalyticsService:
         plt.close()
 
         print(f"Gráfico guardado en: {ruta}")
+    
         # -------------------------------------------------
-    # 2.5 VISUALIZACIÓN - GRAFO DE TRANSFERENCIAS
+    # 2.5 VISUALIZACIÓN - GRAFO FLUJO FINANCIERO
     # -------------------------------------------------
-    def plot_grafo_transferencias(self):
+    def plot_grafo_flujo_financiero(self):
 
         if self.transacciones.size == 0:
             print("No hay transacciones para graficar.")
@@ -393,34 +394,38 @@ class AnalyticsService:
 
         os.makedirs("outputs/plots", exist_ok=True)
 
-        # Filtrar solo transferencias salientes
-        mask_transfer = (self.tipo == "TRANSFER_OUT")
+        mask_ingresos = (self.tipo == "DEPOSITO") | (self.tipo == "TRANSFER_IN")
+        mask_gastos = (self.tipo == "RETIRO") | (self.tipo == "TRANSFER_OUT")
 
-        cuentas_origen = self.id_cuenta[mask_transfer]
-        montos = self.monto[mask_transfer]
-
-        if cuentas_origen.size == 0:
-            print("No hay transferencias registradas.")
-            return
-
-       
-        cuentas_unicas = np.unique(self.id_cuenta)
-        cuentas_destino = np.random.choice(cuentas_unicas, size=cuentas_origen.size)
+        cuentas = np.unique(self.id_cuenta)
 
         G = nx.DiGraph()
 
-        for origen, destino, monto in zip(cuentas_origen, cuentas_destino, montos):
-            if G.has_edge(origen, destino):
-                G[origen][destino]['weight'] += monto
-            else:
-                G.add_edge(origen, destino, weight=monto)
+        G.add_node("INGRESOS")
+        G.add_node("GASTOS")
+
+        for cuenta in cuentas:
+
+            mask_cuenta = (self.id_cuenta == cuenta)
+
+            total_ingresos = self.monto[mask_cuenta & mask_ingresos].sum()
+            total_gastos = self.monto[mask_cuenta & mask_gastos].sum()
+
+            if total_ingresos > 0:
+                G.add_edge(cuenta, "INGRESOS", weight=total_ingresos)
+
+            if total_gastos > 0:
+                G.add_edge(cuenta, "GASTOS", weight=total_gastos)
+
+        if G.number_of_edges() == 0:
+            print("No hay datos suficientes para grafo.")
+            return
 
         plt.figure(figsize=(8, 6))
         pos = nx.spring_layout(G, seed=42)
 
         weights = [G[u][v]['weight'] for u, v in G.edges()]
-
-        max_weight = max(weights) if weights else 1
+        max_weight = max(weights)
 
         nx.draw(
             G,
@@ -428,12 +433,13 @@ class AnalyticsService:
             with_labels=True,
             node_size=1500,
             font_size=10,
-            width=[w / max(weights) * 3 for w in weights] if weights else 1
-)
+            width=[w / max_weight * 3 for w in weights]
+        )
 
-        plt.title("Grafo de Transferencias entre Cuentas")
+        plt.title("Grafo de Flujo Financiero por Cuenta")
 
-        ruta = "outputs/plots/grafo_transferencias.png"
+        ruta = "outputs/plots/grafo_flujo_financiero.png"
         plt.savefig(ruta)
         plt.close()
-        print(f"grafo guardado en {ruta}")
+
+        print(f"Grafo guardado en {ruta}")
