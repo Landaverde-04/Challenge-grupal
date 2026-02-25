@@ -1,0 +1,31 @@
+# Entorno virtual
+.venv/
+venv/
+env/
+ENV/
+
+# Archivos de caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.cpython-*.pyc
+
+# Archivos de distribución / empaquetado
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
